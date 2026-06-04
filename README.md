@@ -1,21 +1,29 @@
 # Tara Finance Research Agent
 
-A finance-research agent built for the Provue Engineering Take-Home Assignment.
+A finance research agent built for the Provue Engineering Take-Home Assignment.
+
+---
+
+## Overview
+
+Tara Finance Research Agent answers finance-related questions using transaction, fund, NAV, and holdings data stored in PostgreSQL.
+
+The system ingests financial snapshots from JSON files into PostgreSQL and exposes a REST API endpoint (`POST /ask`) that returns human-readable answers generated from database queries.
+
+---
 
 ## Features
 
 * Ingests financial data from JSON files into PostgreSQL
-* Provides a REST API endpoint (`POST /ask`)
-* Answers spending and portfolio-related questions
-* Computes:
-
-  * Total spending
-  * Top spending category
-  * Top merchants
-  * Portfolio value
-  * Fund returns
-  * Holding performance
-* Uses PostgreSQL as the source of truth
+* Provides REST API endpoints
+* Computes total spending
+* Identifies top spending categories
+* Identifies top merchants
+* Calculates portfolio value
+* Calculates fund returns
+* Calculates holding performance
+* Uses PostgreSQL as the single source of truth
+* Returns JSON responses
 
 ---
 
@@ -26,94 +34,176 @@ A finance-research agent built for the Provue Engineering Take-Home Assignment.
 * Express
 * PostgreSQL
 * Mastra
+* Neon PostgreSQL
+* Render
 
 ---
 
 ## Project Structure
 
-src/mastra/
-├── scripts/
-│ └── ingest.ts
-├── server.ts
+```text
+src/
+└── mastra/
+    ├── scripts/
+    │   └── ingest.ts
+    └── server.ts
+```
 
 ---
 
-## Database Setup
+## Database Schema
 
-Create a PostgreSQL database:
+### transactions
 
-CREATE DATABASE provue_tara;
+Stores spending activity.
 
-Update `.env`:
+Columns:
 
-DATABASE_URL=your_postgres_connection_string
+* id
+* date
+* merchant
+* category
+* amount
+* currency
+* memo
+
+### funds
+
+Stores fund metadata.
+
+Columns:
+
+* fund_id
+* fund_name
+* category
+
+### fund_navs
+
+Stores historical NAV data.
+
+Columns:
+
+* id
+* fund_id
+* nav_date
+* nav
+
+### holdings
+
+Stores owned investments.
+
+Columns:
+
+* id
+* fund_id
+* fund_name
+* units
+* purchase_date
+* purchase_nav
 
 ---
 
-## Install Dependencies
+## Environment Variables
 
+Create a `.env` file:
+
+```env
+DATABASE_URL=your_postgresql_connection_string
+```
+
+Example:
+
+```env
+DATABASE_URL=postgresql://username:password@host/database
+```
+
+---
+
+## Installation
+
+Install dependencies:
+
+```bash
 npm install
+```
 
 ---
 
 ## Data Ingestion
 
-Load sample data into PostgreSQL:
+Import sample datasets into PostgreSQL:
 
+```bash
 npx tsx src/mastra/scripts/ingest.ts
+```
 
 Expected Output:
 
+```text
 Loaded transactions
 Loaded funds
 Loaded holdings
-All data imported successfully
+```
 
 ---
 
 ## Run Server
 
+Start the application:
+
+```bash
 npx tsx src/mastra/server.ts
+```
 
 Expected Output:
 
-Server running on http://localhost:3000
+```text
+Server running on port 3000
+```
 
 ---
 
-## API Usage
+## API Documentation
 
 ### Health Check
 
-GET /
+**GET /**
 
 Response:
 
+```json
 {
-"message": "Provue Tara API Running"
+  "message": "Provue Tara API Running"
 }
+```
 
 ---
 
 ### Ask Endpoint
 
-POST /ask
+**POST /ask**
 
 Request:
 
+```json
 {
-"question": "What is my total spending?"
+  "question": "What is my total spending?"
 }
+```
 
 Response:
 
+```json
 {
-"answer": "Your total spending is ₹3547816.19"
+  "answer": "Your total spending excluding transfers is ₹3547816.19."
 }
+```
 
 ---
 
 ## Supported Questions
+
+Examples:
 
 * What is my total spending?
 * What is my top spending category?
@@ -126,15 +216,57 @@ Response:
 
 ## Deployment
 
-The application can be deployed on:
+### Public URL
+
+https://tara-agent.onrender.com
+
+### API Endpoint
+
+POST https://tara-agent.onrender.com/ask
+
+### Example Request
+
+```bash
+curl -X POST https://tara-agent.onrender.com/ask \
+-H "Content-Type: application/json" \
+-d "{\"question\":\"what is my total spending?\"}"
+```
+
+---
+
+## Deployment Stack
+
+### Application Hosting
 
 * Render
-* Railway
-* Fly.io
+
+### Database Hosting
+
+* Neon PostgreSQL
+
+---
+
+## Assumptions
+
+* Input JSON files are valid.
+* Fund IDs are unique.
+* Holdings reference valid fund IDs.
+* Latest NAV is treated as current NAV.
+* Spending calculations exclude transfers.
+
+---
+
+## Known Limitations
+
+* Keyword-based routing supports predefined question types.
+* Complex natural language queries are not fully supported.
+* Render free tier may introduce cold-start latency.
+* No authentication layer is implemented.
 
 ---
 
 ## Author
 
 Pragya Pal
+
 Provue Engineering Assignment Submission
